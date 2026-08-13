@@ -73,3 +73,4 @@ def receive_data(data: NessoData, x_api_key: str = Header(None)):
 
     finally:
         db.close()
+        #test
