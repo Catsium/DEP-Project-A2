@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SiteGuard Live Detection</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: #08111f;
+      color: #f8fafc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #08111f;
+    }
+
+    header, main, footer {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      padding: 40px 0 28px;
+      border-bottom: 1px solid #223047;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 46px);
+      letter-spacing: -0.04em;
+    }
+
+    header p, footer {
+      color: #94a3b8;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      padding: 28px 0;
+    }
+
+    .device-card {
+      border: 1px solid #223047;
+      border-radius: 18px;
+      padding: 22px;
+      background: #101b2d;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+    }
+
+    .device-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .connection {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .prediction {
+      margin: 30px 0 8px;
+      font-size: clamp(24px, 4vw, 34px);
+      font-weight: 750;
+      letter-spacing: -0.03em;
+    }
+
+    .prediction.fall { color: #fb7185; }
+    .prediction.near-miss { color: #fbbf24; }
+    .prediction.non-fall { color: #4ade80; }
+    .prediction.waiting { color: #cbd5e1; }
+
+    .updated {
+      min-height: 20px;
+      margin: 0 0 24px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px 18px;
+      margin: 0;
+      padding-top: 18px;
+      border-top: 1px solid #223047;
+    }
+
+    dt { color: #94a3b8; }
+    dd {
+      margin: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    footer {
+      padding: 8px 0 30px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 520px) {
+      header { padding-top: 28px; }
+      .device-card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SiteGuard live detection</h1>
+    <p>Current-window algorithm output. No ML model is being used.</p>
+  </header>
+
+  <main id="device-grid" aria-live="polite"></main>
+
+  <footer>Updates every 0.5 seconds from the configured Nesso receivers.</footer>
+
+  <script>
+    const deviceGrid = document.querySelector("#device-grid");
+
+    function formatNumber(value) {
+      return typeof value === "number" ? value.toFixed(2) : "—";
+    }
+
+    function predictionClass(category) {
+      if (category === "FALL") return "fall";
+      if (category === "NEAR_MISS") return "near-miss";
+      if (category === "NON_FALL") return "non-fall";
+      return "waiting";
+    }
+
+    function renderDashboard(data) {
+      const deviceCards = [];
+
+      for (const [deviceName, device] of Object.entries(data.devices)) {
+        const prediction = device.prediction;
+        const category = prediction?.category ?? "WAITING";
+        const subtype = prediction?.subtype ?? "Waiting for 15 readings";
+        const features = prediction?.feature_values ?? {};
+        let predictionText = `${category} · ${subtype}`;
+        if (category === "NON_FALL" || category === "WAITING") {
+          predictionText = subtype;
+        }
+
+        deviceCards.push(`
+          <section class="device-card">
+            <div class="device-heading">
+              <h2>${deviceName}</h2>
+              <span class="connection">${device.connection}</span>
+            </div>
+            <div class="prediction ${predictionClass(category)}">${predictionText}</div>
+            <p class="updated">${prediction?.time ? `Updated ${prediction.time}` : "No prediction yet"}</p>
+            <dl>
+              <dt>Impact</dt><dd>${formatNumber(features.impact)}</dd>
+              <dt>Freefall</dt><dd>${formatNumber(features.freefall)}</dd>
+              <dt>Motion deviation</dt><dd>${formatNumber(features.motion_standard_deviation)}</dd>
+              <dt>Rotation</dt><dd>${formatNumber(features.rotation)}</dd>
+              <dt>Orientation change</dt><dd>${formatNumber(features.orientation_change)}°</dd>
+            </dl>
+          </section>
+        `);
+      }
+
+      deviceGrid.innerHTML = deviceCards.join("");
+    }
+
+    async function refreshDashboard() {
+      try {
+        const response = await fetch("/api/predictions", { cache: "no-store" });
+        if (!response.ok) throw new Error("Dashboard data is unavailable.");
+        renderDashboard(await response.json());
+      } catch (error) {
+        deviceGrid.innerHTML = `<p>${error.message}</p>`;
+      }
+    }
+
+    refreshDashboard();
+    setInterval(refreshDashboard, 500);
+  </script>
+</body>
+</html>
