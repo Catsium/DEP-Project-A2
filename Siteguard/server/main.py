@@ -62,8 +62,10 @@ def receive_data(data: NessoData, x_api_key: str = Header(None)):
             "readings_saved": len(data.readings)
         }
 
-    except Exception:
+    except Exception as e:
         db.rollback()
+        print("DATABASE ERROR:", e)
+
         raise HTTPException(
             status_code=500,
             detail="Failed to save readings"
