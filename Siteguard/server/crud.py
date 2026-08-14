@@ -45,3 +45,41 @@ def save_reading(db, device_id, reading):
             "gyro_z": reading["gyro_z"],
         }
     )
+def save_prediction(db, device_id, prediction):
+
+    query = text("""
+        INSERT INTO predictions (
+            device_id,
+            rule_prediction,
+            ml_prediction,
+            ml_confidence,
+            final_prediction,
+            decision_status,
+            start_sample_no,
+            end_sample_no
+        )
+        VALUES (
+            :device_id,
+            :rule_prediction,
+            :ml_prediction,
+            :ml_confidence,
+            :final_prediction,
+            :decision_status,
+            :start_sample_no,
+            :end_sample_no
+        )
+    """)
+
+    db.execute(
+        query,
+        {
+            "device_id": device_id,
+            "rule_prediction": prediction["rule_prediction"],
+            "ml_prediction": prediction["ml_prediction"],
+            "ml_confidence": prediction["ml_confidence"],
+            "final_prediction": prediction["final_prediction"],
+            "decision_status": prediction["decision_status"],
+            "start_sample_no": prediction["start_sample_no"],
+            "end_sample_no": prediction["end_sample_no"],
+        }
+    )
