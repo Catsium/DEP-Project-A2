@@ -10,6 +10,10 @@ import httpx
 
 BASE_URL = "https://siteguardbackend.onrender.com"
 API_URL = BASE_URL + "/data"
+SESSION_ID = datetime.now().strftime(
+    "%Y%m%d_%H%M%S_%f"
+)
+
 
 CSV_FILE = Path(__file__).with_name("stitched_walking_stationary_ffh.csv")
 BATCH_SIZE = 15
@@ -75,6 +79,7 @@ def main():
 
         payload = {
             "device_id": DEVICE_ID,
+            "session_id": SESSION_ID,
             "readings": batch,
         }
 

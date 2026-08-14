@@ -6,7 +6,9 @@ import sys
 import time
 from datetime import datetime
 import httpx
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Only Flowery is connected while debugging.
 DEVICE_NAMES = ["Flowery"]
@@ -25,7 +27,7 @@ SEND_INTERVAL_SECONDS = 1.0
 
 # NESSO_API_URL should contain the full FastAPI POST URL.
 API_URL = "https://siteguardbackend.onrender.com/data"
-API_KEY = "playdeltarunetoday"
+API_KEY = os.getenv("NESSO_API_KEY")
 
 
 pending_batches = {}

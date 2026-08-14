@@ -1,11 +1,15 @@
 import os
 import httpx
+from datetime import datetime
 
 API_URL = "https://siteguardbackend.onrender.com/data"
 API_KEY = os.getenv("NESSO_API_KEY")
 
+SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+
 payload = {
     "device_id": "InvalidDataTest",
+    "session_id": SESSION_ID,
     "readings": [
         {
             "sample_no": 1,

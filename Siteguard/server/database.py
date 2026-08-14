@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-DATABASE_URL = "postgresql://postgres.dkmgggsbnpxmudvpshle:nigni9-cutvoh-vathYt@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 if not DATABASE_URL:

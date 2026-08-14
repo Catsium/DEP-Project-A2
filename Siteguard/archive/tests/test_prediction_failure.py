@@ -2,12 +2,13 @@ import os
 from datetime import datetime
 
 import httpx
-
+from datetime import datetime
 
 API_URL = "https://siteguardbackend.onrender.com/data"
 API_KEY = os.getenv("NESSO_API_KEY")
 
 DEVICE_ID = "PredictionFailure_" + datetime.now().strftime("%Y%m%d_%H%M%S")
+SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
 
 def make_reading(sample_no):
@@ -45,6 +46,7 @@ for start in range(1, 61, 15):
 
     payload = {
         "device_id": DEVICE_ID,
+        "session_id": SESSION_ID,
         "readings": readings
     }
 

@@ -1,10 +1,19 @@
+import os
+from datetime import datetime
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 API_URL = "https://siteguardbackend.onrender.com/data"
-DEVICE_ID = "RenderVerify01"
-API_KEY = "playdeltarunetoday"
+DEVICE_ID = "Flowery"
+API_KEY = os.getenv("NESSO_API_KEY")
+
+if not API_KEY:
+    raise RuntimeError("NESSO_API_KEY is not set")
 
 DEVICE_ID = "Flowery"
+SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
 TOTAL_READINGS = 80
 BATCH_SIZE = 20
@@ -40,6 +49,7 @@ for start in range(0, TOTAL_READINGS, BATCH_SIZE):
 
     payload = {
         "device_id": DEVICE_ID,
+        "session_id": SESSION_ID,
         "readings": batch,
     }
 
