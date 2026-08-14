@@ -4,12 +4,18 @@ import asyncio
 import os
 import sys
 import time
-
+from datetime import datetime
 import httpx
 
 
 # Only Flowery is connected while debugging.
 DEVICE_NAMES = ["Flowery"]
+
+# session id helps to identify and stop duplicates, idk why but it started to bug out
+# more of a debug line, might leave for final result/database
+SESSION_ID = datetime.now().strftime(
+    "%Y%m%d_%H%M%S_%f"
+)
 
 # BLE characteristic used by the Nesso to send all 6 IMU values.
 ACCEL_AND_GYRO_UUID = "f509416c-3c4b-401e-a768-b25a9e621a91"
@@ -90,6 +96,7 @@ def build_payload(device_name, readings):
     """Build the JSON body expected by the FastAPI backend."""
     return {
         "device_id": device_name,
+        "session_id": SESSION_ID,
         "readings": readings,
     }
 
@@ -130,7 +137,8 @@ async def upload_pending_batches(http_client):
             )
 
             print(
-                f"Could not upload {device_name} data | {error}"
+                f"Could not upload {device_name} data | "
+                f"{type(error).__name__}: {repr(error)}"
             )
 
 
@@ -208,15 +216,20 @@ async def run_sender():
 
     configured_device_names = ", ".join(DEVICE_NAMES)
     print(f"Scanning for {configured_device_names}...")
+    print(f"Session ID: {SESSION_ID}")
 
     discovered_devices = await BleakScanner.discover(
-        timeout=SCAN_TIME_SECONDS
+        timeout=SCAN_TIME_SECONDS,
+        return_adv=True
     )
 
     devices_by_name = {}
-    for device in discovered_devices:
-        if device.name in DEVICE_NAMES:
-            devices_by_name[device.name] = device
+
+    for device, advertisement in discovered_devices.values():
+        device_name = advertisement.local_name
+
+        if device_name in DEVICE_NAMES:
+            devices_by_name[device_name] = device
 
     connection_tasks = []
 

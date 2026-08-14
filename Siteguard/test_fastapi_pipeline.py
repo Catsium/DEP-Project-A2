@@ -1,7 +1,7 @@
 import httpx
 
-
-API_URL = "http://127.0.0.1:8000/data"
+API_URL = "https://siteguardbackend.onrender.com/data"
+DEVICE_ID = "RenderVerify01"
 API_KEY = "playdeltarunetoday"
 
 DEVICE_ID = "Flowery"
