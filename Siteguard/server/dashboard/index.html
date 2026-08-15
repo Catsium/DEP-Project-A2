@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SiteGuard Basic Wireframe</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; color: #111; }
+  header { padding: 14px 18px; border-bottom: 1px solid #aaa; background: white; display:flex; justify-content:space-between; align-items:center; }
+  nav { width: 180px; background:white; border-right:1px solid #aaa; min-height: calc(100vh - 53px); padding: 14px; }
+  nav button { width:100%; margin-bottom:8px; padding:10px; background:#eee; border:1px solid #999; text-align:left; cursor:pointer; }
+  main { flex:1; padding:18px; }
+  .layout { display:flex; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .box { background:white; border:1px solid #999; padding:14px; margin-bottom:14px; }
+  .stat { flex:1; min-width:150px; }
+  .devices { display:grid; grid-template-columns:repeat(2, minmax(220px,1fr)); gap:10px; }
+  .device { border:1px solid #999; padding:12px; background:#fff; }
+  .device button, .small-btn { padding:6px 10px; border:1px solid #777; background:#eee; cursor:pointer; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { border:1px solid #aaa; padding:7px; text-align:left; font-size:14px; }
+  .placeholder-chart { height:160px; border:1px dashed #777; display:flex; align-items:center; justify-content:center; background:#fafafa; color:#555; }
+  .hidden { display:none; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal { width:min(800px, 95vw); max-height:85vh; overflow:auto; background:white; border:2px solid #555; padding:18px; position:relative; }
+  .modal h2 { margin-top:0; }
+  .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+  .resolve { padding:8px 14px; border:1px solid #555; background:#ddd; cursor:pointer; }
+  .close { position:absolute; top:10px; right:10px; }
+  .status-open { font-weight:bold; }
+  @media (max-width: 720px) {
+    .layout { display:block; }
+    nav { width:100%; min-height:auto; border-right:0; border-bottom:1px solid #aaa; display:flex; gap:8px; }
+    nav button { margin:0; }
+    .devices { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <strong>SITEGUARD</strong>
+  <span>LIVE | Last updated: 2 sec ago</span>
+</header>
+<div class="layout">
+  <nav>
+    <button onclick="showPage('overview')">Overview</button>
+    <button onclick="showPage('insights')">Insights</button>
+  </nav>
+
+  <main>
+    <section id="overview">
+      <h1>Safety Overview</h1>
+
+      <div class="row">
+        <div class="box stat"><strong>Active Nessos</strong><br><br>4</div>
+        <div class="box stat"><strong>Falls Today</strong><br><br>2</div>
+        <div class="box stat"><strong>Near Misses</strong><br><br>1</div>
+        <div class="box stat"><strong>Total Safety Events</strong><br><br>3</div>
+      </div>
+
+      <div class="box">
+        <strong>ACTIVE SAFETY ALERT</strong>
+        <p>FFH detected - Flowery - 94% confidence</p>
+        <button class="small-btn" onclick="openIncident()">Review Incident</button>
+      </div>
+
+      <div class="box">
+        <h2>Workers / Nessos</h2>
+        <div class="devices">
+          <div class="device"><strong>Flowery</strong><p>ONLINE</p><p>Current: FFH</p><p>Last update: 2 sec ago</p><button onclick="openWorker('Flowery')">View Worker</button></div>
+          <div class="device"><strong>Catsium</strong><p>ONLINE</p><p>Current: WALKING</p><p>Last update: 1 sec ago</p><button onclick="openWorker('Catsium')">View Worker</button></div>
+          <div class="device"><strong>Doggsium</strong><p>ONLINE</p><p>Current: STATIONARY</p><p>Last update: 3 sec ago</p><button onclick="openWorker('Doggsium')">View Worker</button></div>
+          <div class="device"><strong>Birdsium</strong><p>ONLINE</p><p>Current: RUNNING</p><p>Last update: 2 sec ago</p><button onclick="openWorker('Birdsium')">View Worker</button></div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2>Recent Safety Events</h2>
+        <table>
+          <thead><tr><th>Time</th><th>Device</th><th>Event</th><th>Decision</th><th>Review</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>13:08</td><td>Flowery</td><td>FFH</td><td>CONSENSUS</td><td class="status-open" id="reviewStatus">OPEN</td><td><button class="small-btn" onclick="openIncident()">Review</button></td></tr>
+            <tr><td>12:42</td><td>Doggsium</td><td>STF</td><td>ML_FALLBACK</td><td>RESOLVED</td><td><button class="small-btn">View</button></td></tr>
+            <tr><td>11:55</td><td>Catsium</td><td>NEAR_MISS</td><td>CONSENSUS</td><td>RESOLVED</td><td><button class="small-btn">View</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="insights" class="hidden">
+      <h1>Safety Insights</h1>
+      <div class="box">
+        <label>Device: <select><option>All</option><option>Flowery</option><option>Catsium</option><option>Doggsium</option><option>Birdsium</option></select></label>
+        &nbsp;
+        <label>Event: <select><option>All</option><option>FFH</option><option>STF</option><option>NEAR_MISS</option></select></label>
+        &nbsp;
+        <label>Date: <select><option>Today</option><option>Last 7 Days</option></select></label>
+      </div>
+      <div class="box"><h2>Safety Events Over Time</h2><div class="placeholder-chart">Chart Placeholder</div></div>
+      <div class="row">
+        <div class="box stat"><h2>Event Breakdown</h2><div class="placeholder-chart">Bar Chart Placeholder</div></div>
+        <div class="box stat"><h2>Events by Device</h2><div class="placeholder-chart">Bar Chart Placeholder</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+function showPage(id){
+  document.getElementById('overview').classList.add('hidden');
+  document.getElementById('insights').classList.add('hidden');
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
+
+function openWorker(name){
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal">
+        <button class="close" onclick="closeModal()">X</button>
+        <h2>${name} - Worker Details</h2>
+        <p>Status: ONLINE</p>
+        <p>Current Classification: ${name === 'Flowery' ? 'FFH' : 'STATIONARY'}</p>
+        <p>ML Confidence: ${name === 'Flowery' ? '94%' : '97%'}</p>
+        <p>Decision Status: CONSENSUS</p>
+        <p>Last Reading: 2 sec ago</p>
+        <div class="box"><strong>Accelerometer</strong><div class="placeholder-chart">X / Y / Z Graph Placeholder</div></div>
+        <div class="box"><strong>Gyroscope</strong><div class="placeholder-chart">X / Y / Z Graph Placeholder</div></div>
+        <div class="box"><strong>Recent Predictions</strong><p>Prediction history table placeholder</p></div>
+      </div>
+    </div>`;
+}
+
+function openIncident(){
+  const rows = Array.from({length:15}, (_,i) => `
+    <tr><td>${16+i}</td><td>${(0.10+i*0.02).toFixed(2)}</td><td>${(0.05+i*0.01).toFixed(2)}</td><td>${(0.90-i*0.02).toFixed(2)}</td><td>${(2+i*3).toFixed(1)}</td><td>${(1+i*2).toFixed(1)}</td><td>${(3+i*4).toFixed(1)}</td></tr>`).join('');
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal">
+        <button class="close" onclick="closeModal()">X</button>
+        <h2>Incident Review - Flowery</h2>
+        <p>Event: FFH</p>
+        <p>Rule Prediction: FFH</p>
+        <p>ML Prediction: FFH</p>
+        <p>Final Prediction: FFH</p>
+        <p>Confidence: 94%</p>
+        <p>Decision Status: CONSENSUS</p>
+        <p>Review Status: <strong id="modalReviewStatus">OPEN</strong></p>
+        <h3>Recent Data Readings</h3>
+        <table>
+          <thead><tr><th>Sample</th><th>Ax</th><th>Ay</th><th>Az</th><th>Gx</th><th>Gy</th><th>Gz</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="modal-actions">
+          <button class="resolve" onclick="resolveIncident()">Resolve Incident</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function resolveIncident(){
+  const modalStatus = document.getElementById('modalReviewStatus');
+  const tableStatus = document.getElementById('reviewStatus');
+  if(modalStatus) modalStatus.textContent = 'RESOLVED';
+  if(tableStatus) tableStatus.textContent = 'RESOLVED';
+}
+</script>
+</body>
+</html>

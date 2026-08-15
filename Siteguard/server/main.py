@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from pathlib import Path
 import os
 
 from database import SessionLocal
@@ -11,6 +13,23 @@ from prediction_voter import vote_prediction
 
 PREDICTION_INTERVAL = 15
 app = FastAPI()
+
+
+# Dashboard folder
+DASHBOARD_DIR = (
+    Path(__file__).resolve().parent
+    / "dashboard"
+)
+
+app.mount(
+    "/dashboard",
+    StaticFiles(
+        directory=str(DASHBOARD_DIR),
+        html=True
+    ),
+    name="dashboard"
+)
+
 
 API_KEY = os.getenv("NESSO_API_KEY")
 
