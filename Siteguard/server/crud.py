@@ -116,4 +116,4 @@ def save_prediction(db, device_id, session_id, prediction):
         }
     )
 
-    return result.scalar_one_or_none() is not None
+    return result.scalar_one_or_none()

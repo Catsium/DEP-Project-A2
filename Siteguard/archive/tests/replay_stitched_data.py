@@ -1,5 +1,5 @@
 """Replay the stitched real Nesso dataset through the deployed SiteGuard API."""
-
+import time
 import csv
 import os
 from datetime import datetime
@@ -8,7 +8,7 @@ from pathlib import Path
 import httpx
 
 
-BASE_URL = "https://siteguardbackend.onrender.com"
+BASE_URL = "http://127.0.0.1:8000"
 API_URL = BASE_URL + "/data"
 SESSION_ID = datetime.now().strftime(
     "%Y%m%d_%H%M%S_%f"
@@ -20,7 +20,12 @@ BATCH_SIZE = 15
 
 # A new device ID is used every run so an old Render buffer cannot affect
 # the current test.
-DEVICE_ID = "StitchedFFH_" + datetime.now().strftime("%Y%m%d_%H%M%S")
+DEVICE_ID = "Flowery"
+
+SESSION_ID = (
+    "replay_Flowery_"
+    + datetime.now().strftime("%Y%m%d_%H%M%S")
+)
 
 API_KEY = os.getenv("NESSO_API_KEY")
 
@@ -107,6 +112,7 @@ def main():
     print("Replay finished.")
     print("Use this device_id in Supabase:")
     print(DEVICE_ID)
+    time.sleep(1.5)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,13 @@
   nav { width: 180px; background:white; border-right:1px solid #aaa; min-height: calc(100vh - 53px); padding: 14px; }
   nav button { width:100%; margin-bottom:8px; padding:10px; background:#eee; border:1px solid #999; text-align:left; cursor:pointer; }
   main { flex:1; padding:18px; }
+  .sensor-chart {
+  width: 100%;
+  height: 220px;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+  background: white;
+}
   .layout { display:flex; }
   .row { display:flex; gap:12px; flex-wrap:wrap; }
   .box { background:white; border:1px solid #999; padding:14px; margin-bottom:14px; }
@@ -18,9 +25,38 @@
   .devices { display:grid; grid-template-columns:repeat(2, minmax(220px,1fr)); gap:10px; }
   .device { border:1px solid #999; padding:12px; background:#fff; }
   .device button, .small-btn { padding:6px 10px; border:1px solid #777; background:#eee; cursor:pointer; }
+
+  .device-critical {
+    border: 3px solid #b00020;
+    background: #ffe9ec;
+  }
+
+  .critical-alert {
+    border: 3px solid #b00020;
+    background: #ffe9ec;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .critical-alert h2 {
+    margin-top: 0;
+  }
   table { width:100%; border-collapse:collapse; }
   th, td { border:1px solid #aaa; padding:7px; text-align:left; font-size:14px; }
   .placeholder-chart { height:160px; border:1px dashed #777; display:flex; align-items:center; justify-content:center; background:#fafafa; color:#555; }
+
+  .simple-bar-row {
+    margin: 10px 0;
+  }
+
+  .simple-bar {
+    display: inline-block;
+    height: 18px;
+    background: #bbb;
+    margin-left: 8px;
+    vertical-align: middle;
+    min-width: 2px;
+  }
   .hidden { display:none; }
   .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; padding:20px; }
   .modal { width:min(800px, 95vw); max-height:85vh; overflow:auto; background:white; border:2px solid #555; padding:18px; position:relative; }
@@ -40,7 +76,11 @@
 <body>
 <header>
   <strong>SITEGUARD</strong>
-  <span>LIVE | Last updated: 2 sec ago</span>
+  <span>
+    LIVE |
+    Last updated:
+    <span id="lastUpdated">Loading...</span>
+  </span>
 </header>
 <div class="layout">
   <nav>
@@ -53,36 +93,65 @@
       <h1>Safety Overview</h1>
 
       <div class="row">
-        <div class="box stat"><strong>Active Nessos</strong><br><br>4</div>
-        <div class="box stat"><strong>Falls Today</strong><br><br>2</div>
-        <div class="box stat"><strong>Near Misses</strong><br><br>1</div>
-        <div class="box stat"><strong>Total Safety Events</strong><br><br>3</div>
+
+        <div class="box stat">
+          <strong>Active Nessos</strong>
+          <br><br>
+          <span id="activeNessos">-</span>
+        </div>
+
+        <div class="box stat">
+          <strong>Falls Today</strong>
+          <br><br>
+          <span id="fallsToday">-</span>
+        </div>
+
+        <div class="box stat">
+          <strong>Near Misses Today</strong>
+          <br><br>
+          <span id="nearMissesToday">-</span>
+        </div>
+
+        <div class="box stat">
+          <strong>Total Safety Events</strong>
+          <br><br>
+          <span id="totalSafetyEvents">-</span>
+        </div>
+
       </div>
 
-      <div class="box">
-        <strong>ACTIVE SAFETY ALERT</strong>
-        <p>FFH detected - Flowery - 94% confidence</p>
-        <button class="small-btn" onclick="openIncident()">Review Incident</button>
-      </div>
+      <div
+        id="criticalAlert"
+        class="critical-alert hidden"
+      ></div>
 
       <div class="box">
         <h2>Workers / Nessos</h2>
-        <div class="devices">
-          <div class="device"><strong>Flowery</strong><p>ONLINE</p><p>Current: FFH</p><p>Last update: 2 sec ago</p><button onclick="openWorker('Flowery')">View Worker</button></div>
-          <div class="device"><strong>Catsium</strong><p>ONLINE</p><p>Current: WALKING</p><p>Last update: 1 sec ago</p><button onclick="openWorker('Catsium')">View Worker</button></div>
-          <div class="device"><strong>Doggsium</strong><p>ONLINE</p><p>Current: STATIONARY</p><p>Last update: 3 sec ago</p><button onclick="openWorker('Doggsium')">View Worker</button></div>
-          <div class="device"><strong>Birdsium</strong><p>ONLINE</p><p>Current: RUNNING</p><p>Last update: 2 sec ago</p><button onclick="openWorker('Birdsium')">View Worker</button></div>
+        <div class="devices" id="devicesContainer">
+        <div class="device">
+            Loading devices...
         </div>
       </div>
+    </div>
 
       <div class="box">
         <h2>Recent Safety Events</h2>
         <table>
-          <thead><tr><th>Time</th><th>Device</th><th>Event</th><th>Decision</th><th>Review</th><th></th></tr></thead>
-          <tbody>
-            <tr><td>13:08</td><td>Flowery</td><td>FFH</td><td>CONSENSUS</td><td class="status-open" id="reviewStatus">OPEN</td><td><button class="small-btn" onclick="openIncident()">Review</button></td></tr>
-            <tr><td>12:42</td><td>Doggsium</td><td>STF</td><td>ML_FALLBACK</td><td>RESOLVED</td><td><button class="small-btn">View</button></td></tr>
-            <tr><td>11:55</td><td>Catsium</td><td>NEAR_MISS</td><td>CONSENSUS</td><td>RESOLVED</td><td><button class="small-btn">View</button></td></tr>
+          <thead>
+            <tr>
+              <th>Date / Time</th>
+              <th>Device</th>
+              <th>Event</th>
+              <th>Confidence</th>
+              <th>Decision</th>
+              <th>Review Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="eventsTableBody">
+            <tr>
+              <td colspan="7">Loading safety events...</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -90,17 +159,72 @@
 
     <section id="insights" class="hidden">
       <h1>Safety Insights</h1>
+
       <div class="box">
-        <label>Device: <select><option>All</option><option>Flowery</option><option>Catsium</option><option>Doggsium</option><option>Birdsium</option></select></label>
+        <label>
+          Device:
+          <select
+            id="insightDevice"
+            onchange="loadInsights()"
+          >
+            <option>All</option>
+            <option>Flowery</option>
+            <option>Catsium</option>
+            <option>Doggsium</option>
+            <option>Birdsium</option>
+          </select>
+        </label>
+
         &nbsp;
-        <label>Event: <select><option>All</option><option>FFH</option><option>STF</option><option>NEAR_MISS</option></select></label>
+
+        <label>
+          Event:
+          <select
+            id="insightEvent"
+            onchange="loadInsights()"
+          >
+            <option>All</option>
+            <option>FFH</option>
+            <option>STF</option>
+            <option>NEAR_MISS</option>
+          </select>
+        </label>
+
         &nbsp;
-        <label>Date: <select><option>Today</option><option>Last 7 Days</option></select></label>
+
+        <label>
+          Date:
+          <select
+            id="insightDays"
+            onchange="loadInsights()"
+          >
+            <option value="1">Today</option>
+            <option value="7" selected>Last 7 Days</option>
+          </select>
+        </label>
       </div>
-      <div class="box"><h2>Safety Events Over Time</h2><div class="placeholder-chart">Chart Placeholder</div></div>
+
+      <div class="box">
+        <h2>Safety Events Over Time</h2>
+        <div id="eventsOverTime">
+          Loading...
+        </div>
+      </div>
+
       <div class="row">
-        <div class="box stat"><h2>Event Breakdown</h2><div class="placeholder-chart">Bar Chart Placeholder</div></div>
-        <div class="box stat"><h2>Events by Device</h2><div class="placeholder-chart">Bar Chart Placeholder</div></div>
+        <div class="box stat">
+          <h2>Event Breakdown</h2>
+          <div id="eventBreakdown">
+            Loading...
+          </div>
+        </div>
+
+        <div class="box stat">
+          <h2>Events by Device</h2>
+          <div id="eventsByDevice">
+            Loading...
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -109,6 +233,683 @@
 <div id="modalRoot"></div>
 
 <script>
+
+const configuredDevices = [
+  "Flowery",
+  "Catsium",
+  "Doggsium",
+  "Birdsium"
+];
+
+let criticalDeviceId = null;
+let criticalPredictionId = null;
+
+
+function showCriticalAlert(event) {
+
+  if (!event) {
+    return;
+  }
+
+  criticalDeviceId =
+    event.device_id;
+
+  criticalPredictionId =
+    event.id;
+
+  const alertBox =
+    document.getElementById(
+      "criticalAlert"
+    );
+
+  let confidence = "N/A";
+
+  if (
+    event.ml_confidence !== null &&
+    event.ml_confidence !== undefined
+  ) {
+
+    confidence =
+      (
+        event.ml_confidence * 100
+      ).toFixed(1) + "%";
+  }
+
+  alertBox.innerHTML = `
+    <h2>
+      CRITICAL FALL ALERT
+    </h2>
+
+    <p>
+      <strong>
+        ${event.final_prediction}
+      </strong>
+      detected for
+      <strong>
+        ${event.device_id}
+      </strong>
+    </p>
+
+    <p>
+      Confidence:
+      ${confidence}
+    </p>
+
+    <button
+      class="small-btn"
+      onclick="openIncident(${event.id})"
+    >
+      Review Incident
+    </button>
+  `;
+
+  alertBox.classList.remove(
+    "hidden"
+  );
+
+  loadDevices();
+}
+
+
+function clearCriticalAlert() {
+
+  criticalDeviceId = null;
+  criticalPredictionId = null;
+
+  const alertBox =
+    document.getElementById(
+      "criticalAlert"
+    );
+
+  alertBox.innerHTML = "";
+
+  alertBox.classList.add(
+    "hidden"
+  );
+}
+
+
+function updateCriticalAlertFromEvents(
+  events
+) {
+
+  // Events arrive newest first.
+  // The newest FFH/STF controls the
+  // persistent critical alert.
+  const latestCritical =
+    events.find(event =>
+      configuredDevices.includes(
+        event.device_id
+      ) &&
+      (
+        event.final_prediction === "FFH" ||
+        event.final_prediction === "STF"
+      )
+    );
+
+
+  if (
+    latestCritical &&
+    (
+      !latestCritical.review_status ||
+      latestCritical.review_status === "OPEN"
+    )
+  ) {
+
+    showCriticalAlert(
+      latestCritical
+    );
+
+  } else {
+
+    clearCriticalAlert();
+  }
+}
+
+function startCriticalAlertStream() {
+
+  const stream =
+    new EventSource(
+      "/api/dashboard/alerts/stream"
+    );
+
+  stream.onmessage = function(message) {
+
+    try {
+
+      const event =
+        JSON.parse(
+          message.data
+        );
+
+      showCriticalAlert(
+        event
+      );
+
+      loadSafetyEvents();
+      loadSummary();
+
+    } catch (error) {
+
+      console.error(
+        "Critical alert parse error:",
+        error
+      );
+    }
+  };
+
+
+  stream.onerror = function(error) {
+
+    console.error(
+      "Critical alert stream reconnecting:",
+      error
+    );
+  };
+}
+
+
+async function loadDevices() {
+  const container = document.getElementById("devicesContainer");
+
+  try {
+    const response = await fetch("/api/dashboard/devices");
+
+    if (!response.ok) {
+      throw new Error("Failed to load devices");
+    }
+
+    const devices = await response.json();
+
+    if (devices.length === 0) {
+      container.innerHTML = `
+        <div class="device">
+          No devices found.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = devices.map(device => {
+
+      const connectionStatus =
+        device.online ? "ONLINE" : "OFFLINE";
+
+      const prediction =
+        device.final_prediction || "No prediction";
+
+      const seconds =
+        device.seconds_since_last_seen;
+
+      let lastUpdate;
+
+      if (seconds === null) {
+
+        lastUpdate = "No data";
+
+      } else if (seconds < 60) {
+
+        lastUpdate =
+          `${seconds} sec ago`;
+
+      } else if (seconds < 3600) {
+
+        lastUpdate =
+          `${Math.floor(seconds / 60)} min ago`;
+
+      } else {
+
+        lastUpdate =
+          `${Math.floor(seconds / 3600)} hr ago`;
+      }
+
+      const criticalClass =
+        device.device_id === criticalDeviceId
+          ? " device-critical"
+          : "";
+
+      return `
+        <div class="device${criticalClass}">
+          <strong>${device.device_id}</strong>
+
+          <p>${connectionStatus}</p>
+
+          <p>
+            Current: ${prediction}
+          </p>
+
+          <p>
+            Last update: ${lastUpdate}
+          </p>
+
+          <button
+            onclick="openWorker('${device.device_id}')"
+          >
+            View Worker
+          </button>
+        </div>
+      `;
+    }).join("");
+
+  } catch (error) {
+
+    console.error(error);
+
+    container.innerHTML = `
+      <div class="device">
+        Failed to load devices.
+      </div>
+    `;
+  }
+}
+
+async function loadSummary() {
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/dashboard/summary"
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        "Failed to load summary"
+      );
+    }
+
+    const summary =
+      await response.json();
+
+
+    document.getElementById(
+      "activeNessos"
+    ).textContent =
+      summary.active_nessos;
+
+
+    document.getElementById(
+      "fallsToday"
+    ).textContent =
+      summary.falls_today;
+
+
+    document.getElementById(
+      "nearMissesToday"
+    ).textContent =
+      summary.near_misses_today;
+
+
+    document.getElementById(
+      "totalSafetyEvents"
+    ).textContent =
+      summary.total_events_today;
+
+
+  } catch (error) {
+
+    console.error(
+      "Failed to load dashboard summary:",
+      error
+    );
+  }
+}
+
+async function loadSafetyEvents() {
+
+  const tableBody =
+    document.getElementById(
+      "eventsTableBody"
+    );
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/dashboard/events"
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        "Failed to load safety events"
+      );
+    }
+
+    const events =
+      await response.json();
+
+    if (!Array.isArray(events)) {
+      throw new Error(
+        "Events API did not return an array"
+      );
+    }
+
+    if (events.length === 0) {
+
+      clearCriticalAlert();
+
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="7">
+            No safety events found.
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    updateCriticalAlertFromEvents(
+      events
+    );
+
+    tableBody.innerHTML =
+      events.map(event => {
+
+        const eventTime =
+          new Date(
+            event.created_at
+          );
+
+        const formattedDateTime =
+          eventTime.toLocaleString(
+            [],
+            {
+              day: "2-digit",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit"
+            }
+          );
+
+        let confidence = "N/A";
+
+        if (
+          event.ml_confidence !== null &&
+          event.ml_confidence !== undefined
+        ) {
+
+          confidence =
+            (
+              event.ml_confidence * 100
+            ).toFixed(1) + "%";
+        }
+
+        const reviewStatus =
+          event.review_status || "OPEN";
+
+        return `
+          <tr>
+            <td>${formattedDateTime}</td>
+            <td>${event.device_id}</td>
+            <td>${event.final_prediction}</td>
+            <td>${confidence}</td>
+            <td>${event.decision_status}</td>
+            <td>${reviewStatus}</td>
+            <td>
+              <button
+                class="small-btn"
+                onclick="openIncident(${event.id})"
+              >
+                Review
+              </button>
+            </td>
+          </tr>
+        `;
+
+      }).join("");
+
+  } catch (error) {
+
+    console.error(error);
+
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7">
+          Failed to load safety events.
+        </td>
+      </tr>
+    `;
+  }
+}
+
+async function loadInsights() {
+
+  const device =
+    document.getElementById(
+      "insightDevice"
+    ).value;
+
+  const event =
+    document.getElementById(
+      "insightEvent"
+    ).value;
+
+  const days =
+    document.getElementById(
+      "insightDays"
+    ).value;
+
+
+  try {
+
+    const response = await fetch(
+      `/api/dashboard/insights` +
+      `?device=${encodeURIComponent(device)}` +
+      `&event=${encodeURIComponent(event)}` +
+      `&days=${days}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Failed to load insights"
+      );
+    }
+
+    const events =
+      await response.json();
+
+    if (!Array.isArray(events)) {
+      throw new Error(
+        "Insights API did not return an array"
+      );
+    }
+
+
+    // -----------------------------
+    // 1. EVENT BREAKDOWN
+    // -----------------------------
+    const breakdown = {
+      FFH: 0,
+      STF: 0,
+      NEAR_MISS: 0
+    };
+
+    events.forEach(item => {
+      if (
+        breakdown[
+          item.final_prediction
+        ] !== undefined
+      ) {
+        breakdown[
+          item.final_prediction
+        ]++;
+      }
+    });
+
+    const maxBreakdown =
+      Math.max(
+        ...Object.values(breakdown),
+        1
+      );
+
+    document.getElementById(
+      "eventBreakdown"
+    ).innerHTML = Object.entries(
+      breakdown
+    ).map(([name, count]) => {
+
+      const width =
+        (
+          count /
+          maxBreakdown
+        ) * 200;
+
+      return `
+        <div class="simple-bar-row">
+          ${name}:
+          <strong>${count}</strong>
+
+          <span
+            class="simple-bar"
+            style="width:${width}px"
+          ></span>
+        </div>
+      `;
+    }).join("");
+
+
+    // -----------------------------
+    // 2. EVENTS BY DEVICE
+    // -----------------------------
+    const devices = {
+      Flowery: 0,
+      Catsium: 0,
+      Doggsium: 0,
+      Birdsium: 0
+    };
+
+    events.forEach(item => {
+      if (
+        devices[
+          item.device_id
+        ] !== undefined
+      ) {
+        devices[
+          item.device_id
+        ]++;
+      }
+    });
+
+    const maxDevice =
+      Math.max(
+        ...Object.values(devices),
+        1
+      );
+
+    document.getElementById(
+      "eventsByDevice"
+    ).innerHTML = Object.entries(
+      devices
+    ).map(([name, count]) => {
+
+      const width =
+        (
+          count /
+          maxDevice
+        ) * 200;
+
+      return `
+        <div class="simple-bar-row">
+          ${name}:
+          <strong>${count}</strong>
+
+          <span
+            class="simple-bar"
+            style="width:${width}px"
+          ></span>
+        </div>
+      `;
+    }).join("");
+
+
+    // -----------------------------
+    // 3. EVENTS OVER TIME
+    // -----------------------------
+    const dailyCounts = {};
+
+    events.forEach(item => {
+      const date =
+        new Date(
+          item.created_at
+        ).toLocaleDateString();
+
+      if (!dailyCounts[date]) {
+        dailyCounts[date] = 0;
+      }
+
+      dailyCounts[date]++;
+    });
+
+    if (
+      Object.keys(
+        dailyCounts
+      ).length === 0
+    ) {
+
+      document.getElementById(
+        "eventsOverTime"
+      ).innerHTML =
+        "No safety events for this period.";
+
+    } else {
+
+      const maxDay =
+        Math.max(
+          ...Object.values(
+            dailyCounts
+          ),
+          1
+        );
+
+      document.getElementById(
+        "eventsOverTime"
+      ).innerHTML = Object.entries(
+        dailyCounts
+      ).map(([date, count]) => {
+
+        const width =
+          (
+            count /
+            maxDay
+          ) * 300;
+
+        return `
+          <div class="simple-bar-row">
+            ${date}:
+            <strong>${count}</strong>
+
+            <span
+              class="simple-bar"
+              style="width:${width}px"
+            ></span>
+          </div>
+        `;
+      }).join("");
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+    document.getElementById(
+      "eventsOverTime"
+    ).textContent =
+      "Failed to load insights.";
+
+    document.getElementById(
+      "eventBreakdown"
+    ).textContent =
+      "Failed to load insights.";
+
+    document.getElementById(
+      "eventsByDevice"
+    ).textContent =
+      "Failed to load insights.";
+  }
+}
+
 function showPage(id){
   document.getElementById('overview').classList.add('hidden');
   document.getElementById('insights').classList.add('hidden');
@@ -117,57 +918,889 @@ function showPage(id){
 
 function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
 
-function openWorker(name){
-  document.getElementById('modalRoot').innerHTML = `
-    <div class="modal-backdrop">
-      <div class="modal">
-        <button class="close" onclick="closeModal()">X</button>
-        <h2>${name} - Worker Details</h2>
-        <p>Status: ONLINE</p>
-        <p>Current Classification: ${name === 'Flowery' ? 'FFH' : 'STATIONARY'}</p>
-        <p>ML Confidence: ${name === 'Flowery' ? '94%' : '97%'}</p>
-        <p>Decision Status: CONSENSUS</p>
-        <p>Last Reading: 2 sec ago</p>
-        <div class="box"><strong>Accelerometer</strong><div class="placeholder-chart">X / Y / Z Graph Placeholder</div></div>
-        <div class="box"><strong>Gyroscope</strong><div class="placeholder-chart">X / Y / Z Graph Placeholder</div></div>
-        <div class="box"><strong>Recent Predictions</strong><p>Prediction history table placeholder</p></div>
-      </div>
-    </div>`;
+function drawSensorChart(
+  canvasId,
+  readings,
+  keys,
+  labels
+) {
+
+  const canvas =
+    document.getElementById(canvasId);
+
+  if (!canvas || readings.length === 0) {
+    return;
+  }
+
+
+  // Make the canvas match its visible width.
+  canvas.width =
+    canvas.clientWidth;
+
+  canvas.height = 220;
+
+
+  const ctx =
+    canvas.getContext("2d");
+
+
+  const width =
+    canvas.width;
+
+  const height =
+    canvas.height;
+
+
+  const padding = 35;
+
+
+  // Colours for X, Y and Z.
+  const colours = [
+    "#d33",
+    "#2a7",
+    "#36c"
+  ];
+
+
+  // Find the smallest and largest values
+  // across all three axes.
+  const values = [];
+
+  readings.forEach(reading => {
+
+    keys.forEach(key => {
+
+      const value =
+        Number(reading[key]);
+
+      if (Number.isFinite(value)) {
+        values.push(value);
+      }
+
+    });
+
+  });
+
+
+  if (values.length === 0) {
+    return;
+  }
+
+
+  let minValue =
+    Math.min(...values);
+
+  let maxValue =
+    Math.max(...values);
+
+
+  // Prevent division by zero if all
+  // readings happen to be identical.
+  if (minValue === maxValue) {
+    minValue -= 1;
+    maxValue += 1;
+  }
+
+
+  // Clear chart.
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+
+  // Draw simple X/Y axes.
+  ctx.strokeStyle = "#aaa";
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    padding,
+    10
+  );
+
+  ctx.lineTo(
+    padding,
+    height - padding
+  );
+
+  ctx.lineTo(
+    width - 10,
+    height - padding
+  );
+
+  ctx.stroke();
+
+
+  const chartWidth =
+    width - padding - 10;
+
+  const chartHeight =
+    height - padding - 10;
+
+
+  // Convert reading position to X coordinate.
+  function getX(index) {
+
+    const denominator =
+      Math.max(
+        readings.length - 1,
+        1
+      );
+
+    return (
+      padding +
+      (
+        index /
+        denominator
+      ) *
+      chartWidth
+    );
+  }
+
+
+  // Convert sensor value to Y coordinate.
+  function getY(value) {
+
+    const percentage =
+      (
+        value - minValue
+      ) /
+      (
+        maxValue - minValue
+      );
+
+    return (
+      height -
+      padding -
+      percentage *
+      chartHeight
+    );
+  }
+
+
+  // Draw X, Y and Z lines.
+  keys.forEach((key, keyIndex) => {
+
+    ctx.strokeStyle =
+      colours[keyIndex];
+
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+
+
+    readings.forEach(
+      (reading, index) => {
+
+        const value =
+          Number(reading[key]);
+
+        if (!Number.isFinite(value)) {
+          return;
+        }
+
+
+        const x =
+          getX(index);
+
+        const y =
+          getY(value);
+
+
+        if (index === 0) {
+
+          ctx.moveTo(x, y);
+
+        } else {
+
+          ctx.lineTo(x, y);
+
+        }
+
+      }
+    );
+
+
+    ctx.stroke();
+
+  });
+
+
+  // Simple legend.
+  ctx.font = "12px Arial";
+
+  labels.forEach(
+    (label, index) => {
+
+      const legendX =
+        padding +
+        index * 50;
+
+      ctx.fillStyle =
+        colours[index];
+
+      ctx.fillText(
+        label,
+        legendX,
+        15
+      );
+
+    }
+  );
+
+
+  // Y-axis range.
+  ctx.fillStyle = "#555";
+
+  ctx.fillText(
+    maxValue.toFixed(2),
+    2,
+    20
+  );
+
+  ctx.fillText(
+    minValue.toFixed(2),
+    2,
+    height - padding
+  );
+
+
+  // Sample range.
+  ctx.fillText(
+    `Sample ${readings[0].sample_no}`,
+    padding,
+    height - 8
+  );
+
+  ctx.fillText(
+    `Sample ${
+      readings[
+        readings.length - 1
+      ].sample_no
+    }`,
+    Math.max(
+      padding,
+      width - 100
+    ),
+    height - 8
+  );
 }
 
-function openIncident(){
-  const rows = Array.from({length:15}, (_,i) => `
-    <tr><td>${16+i}</td><td>${(0.10+i*0.02).toFixed(2)}</td><td>${(0.05+i*0.01).toFixed(2)}</td><td>${(0.90-i*0.02).toFixed(2)}</td><td>${(2+i*3).toFixed(1)}</td><td>${(1+i*2).toFixed(1)}</td><td>${(3+i*4).toFixed(1)}</td></tr>`).join('');
-  document.getElementById('modalRoot').innerHTML = `
+async function openWorker(name) {
+
+  const modalRoot =
+    document.getElementById("modalRoot");
+
+  modalRoot.innerHTML = `
     <div class="modal-backdrop">
       <div class="modal">
-        <button class="close" onclick="closeModal()">X</button>
-        <h2>Incident Review - Flowery</h2>
-        <p>Event: FFH</p>
-        <p>Rule Prediction: FFH</p>
-        <p>ML Prediction: FFH</p>
-        <p>Final Prediction: FFH</p>
-        <p>Confidence: 94%</p>
-        <p>Decision Status: CONSENSUS</p>
-        <p>Review Status: <strong id="modalReviewStatus">OPEN</strong></p>
-        <h3>Recent Data Readings</h3>
-        <table>
-          <thead><tr><th>Sample</th><th>Ax</th><th>Ay</th><th>Az</th><th>Gx</th><th>Gy</th><th>Gz</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <div class="modal-actions">
-          <button class="resolve" onclick="resolveIncident()">Resolve Incident</button>
+
+        <button
+          class="close"
+          onclick="closeModal()"
+        >
+          X
+        </button>
+
+        <h2>${name} - Worker Details</h2>
+
+        <p>Loading...</p>
+
+      </div>
+    </div>
+  `;
+
+
+  try {
+
+    const response = await fetch(
+      `/api/dashboard/device/${encodeURIComponent(name)}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Failed to load worker details"
+      );
+    }
+
+    const data =
+      await response.json();
+
+    const device =
+      data.device;
+
+    const prediction =
+      data.latest_prediction;
+
+
+    const status =
+      device.online
+        ? "ONLINE"
+        : "OFFLINE";
+
+
+    const classification =
+      prediction
+        ? prediction.final_prediction
+        : "No prediction";
+
+
+    let confidence = "N/A";
+
+    if (
+      prediction &&
+      prediction.ml_confidence !== null
+    ) {
+      confidence =
+        (
+          prediction.ml_confidence * 100
+        ).toFixed(1) + "%";
+    }
+
+
+    const decision =
+      prediction
+        ? prediction.decision_status
+        : "N/A";
+
+
+    let predictionRows = "";
+
+    if (data.predictions.length === 0) {
+
+      predictionRows = `
+        <tr>
+          <td colspan="6">
+            No predictions found.
+          </td>
+        </tr>
+      `;
+
+    } else {
+
+      predictionRows =
+        data.predictions.map(item => {
+
+          const time =
+            new Date(
+              item.created_at
+            ).toLocaleTimeString();
+
+          let itemConfidence = "N/A";
+
+          if (item.ml_confidence !== null) {
+
+            itemConfidence =
+              (
+                item.ml_confidence * 100
+              ).toFixed(1) + "%";
+          }
+
+
+          return `
+            <tr>
+              <td>${time}</td>
+              <td>${item.final_prediction}</td>
+              <td>${item.rule_prediction}</td>
+              <td>${item.ml_prediction}</td>
+              <td>${itemConfidence}</td>
+              <td>${item.decision_status}</td>
+            </tr>
+          `;
+
+        }).join("");
+    }
+
+
+    modalRoot.innerHTML = `
+      <div class="modal-backdrop">
+
+        <div class="modal">
+
+          <button
+            class="close"
+            onclick="closeModal()"
+          >
+            X
+          </button>
+
+          <h2>
+            ${device.device_id}
+            - Worker Details
+          </h2>
+
+          <p>
+            Status:
+            <strong>${status}</strong>
+          </p>
+
+          <p>
+            Current Classification:
+            <strong>${classification}</strong>
+          </p>
+
+          <p>
+            ML Confidence:
+            ${confidence}
+          </p>
+
+          <p>
+            Decision Status:
+            ${decision}
+          </p>
+
+          <p>
+            Session:
+            ${device.session_id || "N/A"}
+          </p>
+
+          <p>
+            Latest Sample:
+            ${device.sample_no}
+          </p>
+
+
+          <div class="box">
+
+            <strong>Accelerometer</strong>
+
+            <canvas
+              id="accelChart"
+              class="sensor-chart"
+            ></canvas>
+
+          </div>
+
+
+          <div class="box">
+
+            <strong>Gyroscope</strong>
+
+            <canvas
+              id="gyroChart"
+              class="sensor-chart"
+            ></canvas>
+
+          </div>
+
+
+          <div class="box">
+
+            <strong>Recent Predictions</strong>
+
+            <table>
+
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Final</th>
+                  <th>Rule</th>
+                  <th>ML</th>
+                  <th>Confidence</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${predictionRows}
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+
+    drawSensorChart(
+      "accelChart",
+      data.readings,
+      [
+        "accel_x",
+        "accel_y",
+        "accel_z"
+      ],
+      [
+        "X",
+        "Y",
+        "Z"
+      ]
+    );
+
+
+    drawSensorChart(
+      "gyroChart",
+      data.readings,
+      [
+        "gyro_x",
+        "gyro_y",
+        "gyro_z"
+      ],
+      [
+        "X",
+        "Y",
+        "Z"
+      ]
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    modalRoot.innerHTML = `
+      <div class="modal-backdrop">
+
+        <div class="modal">
+
+          <button
+            class="close"
+            onclick="closeModal()"
+          >
+            X
+          </button>
+
+          <h2>${name} - Worker Details</h2>
+
+          <p>
+            Failed to load worker details.
+          </p>
+
+        </div>
+
+      </div>
+    `;
+  }
+}
+
+async function openIncident(predictionId) {
+
+  const modalRoot =
+    document.getElementById("modalRoot");
+
+  modalRoot.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal">
+
+        <button
+          class="close"
+          onclick="closeModal()"
+        >
+          X
+        </button>
+
+        <h2>Incident Review</h2>
+        <p>Loading...</p>
+
+      </div>
+    </div>
+  `;
+
+
+  try {
+
+    const response = await fetch(
+      `/api/dashboard/incidents/${predictionId}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Failed to load incident"
+      );
+    }
+
+    const data =
+      await response.json();
+
+    const prediction =
+      data.prediction;
+
+
+    let confidence = "N/A";
+
+    if (prediction.ml_confidence !== null) {
+
+      confidence =
+        (
+          prediction.ml_confidence * 100
+        ).toFixed(1) + "%";
+    }
+
+
+    let readingRows = "";
+
+    if (data.readings.length === 0) {
+
+      readingRows = `
+        <tr>
+          <td colspan="7">
+            No sensor readings found.
+          </td>
+        </tr>
+      `;
+
+    } else {
+
+      readingRows =
+        data.readings.map(reading => `
+          <tr>
+            <td>${reading.sample_no}</td>
+            <td>${Number(reading.accel_x).toFixed(3)}</td>
+            <td>${Number(reading.accel_y).toFixed(3)}</td>
+            <td>${Number(reading.accel_z).toFixed(3)}</td>
+            <td>${Number(reading.gyro_x).toFixed(3)}</td>
+            <td>${Number(reading.gyro_y).toFixed(3)}</td>
+            <td>${Number(reading.gyro_z).toFixed(3)}</td>
+          </tr>
+        `).join("");
+    }
+
+
+    const eventTime =
+      new Date(
+        prediction.created_at
+      ).toLocaleString();
+
+
+    const reviewStatus =
+      prediction.review_status || "OPEN";
+
+
+    let resolveButton = "";
+
+    if (reviewStatus === "RESOLVED") {
+
+      resolveButton = `
+        <button
+          class="resolve"
+          disabled
+        >
+          Resolved
+        </button>
+      `;
+
+    } else {
+
+      resolveButton = `
+        <button
+          class="resolve"
+          onclick="resolveIncident(${prediction.id})"
+        >
+          Resolve Incident
+        </button>
+      `;
+    }
+
+
+    modalRoot.innerHTML = `
+      <div class="modal-backdrop">
+
+        <div class="modal">
+
+          <button
+            class="close"
+            onclick="closeModal()"
+          >
+            X
+          </button>
+
+          <h2>
+            Incident Review -
+            ${prediction.device_id}
+          </h2>
+
+          <p>
+            Event:
+            <strong>
+              ${prediction.final_prediction}
+            </strong>
+          </p>
+
+          <p>
+            Time:
+            ${eventTime}
+          </p>
+
+          <p>
+            Rule Prediction:
+            ${prediction.rule_prediction}
+          </p>
+
+          <p>
+            ML Prediction:
+            ${prediction.ml_prediction}
+          </p>
+
+          <p>
+            Final Prediction:
+            ${prediction.final_prediction}
+          </p>
+
+          <p>
+            Confidence:
+            ${confidence}
+          </p>
+
+          <p>
+            Decision Status:
+            ${prediction.decision_status}
+          </p>
+
+          <p>
+            Review Status:
+            <strong>${reviewStatus}</strong>
+          </p>
+
+          <p>
+            Target Samples:
+            ${prediction.start_sample_no}
+            -
+            ${prediction.end_sample_no}
+          </p>
+
+          <h3>
+            Incident Sensor Readings
+          </h3>
+
+          <table>
+
+            <thead>
+              <tr>
+                <th>Sample</th>
+                <th>Ax</th>
+                <th>Ay</th>
+                <th>Az</th>
+                <th>Gx</th>
+                <th>Gy</th>
+                <th>Gz</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${readingRows}
+            </tbody>
+
+          </table>
+
+          <div class="modal-actions">
+
+            ${resolveButton}
+
+          </div>
+
         </div>
       </div>
-    </div>`;
+    `;
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    modalRoot.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal">
+
+          <button
+            class="close"
+            onclick="closeModal()"
+          >
+            X
+          </button>
+
+          <h2>Incident Review</h2>
+
+          <p>
+            Failed to load incident.
+          </p>
+
+        </div>
+      </div>
+    `;
+  }
 }
 
-function resolveIncident(){
-  const modalStatus = document.getElementById('modalReviewStatus');
-  const tableStatus = document.getElementById('reviewStatus');
-  if(modalStatus) modalStatus.textContent = 'RESOLVED';
-  if(tableStatus) tableStatus.textContent = 'RESOLVED';
+
+async function resolveIncident(predictionId) {
+
+  try {
+
+    const response = await fetch(
+      `/api/dashboard/incidents/${predictionId}/resolve`,
+      {
+        method: "PATCH"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Failed to resolve incident"
+      );
+    }
+
+
+    if (
+      criticalPredictionId === predictionId
+    ) {
+
+      clearCriticalAlert();
+    }
+
+
+    // Close the incident popup after resolving.
+    closeModal();
+
+
+    // Refresh the dashboard immediately.
+    await Promise.all([
+      loadSafetyEvents(),
+      loadDevices(),
+      loadSummary()
+    ]);
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "Failed to resolve incident."
+    );
+  }
 }
+
+async function refreshDashboard() {
+
+  await Promise.all([
+    loadSafetyEvents(),
+    loadDevices(),
+    loadSummary()
+  ]);
+
+  const now =
+    new Date();
+
+  document.getElementById(
+    "lastUpdated"
+  ).textContent =
+    now.toLocaleTimeString();
+}
+
+refreshDashboard();
+loadInsights();
+startCriticalAlertStream();
+
+setInterval(
+  refreshDashboard,
+  3000
+);
 </script>
 </body>
 </html>
