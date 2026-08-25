@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-API_URL = "http://127.0.0.1:8000/data"
+API_URL = "https://siteguardbackend.onrender.com/data"
 API_KEY = os.getenv("NESSO_API_KEY")
 
 
@@ -20,6 +20,7 @@ if not API_KEY:
 DEVICES = [
     "Catsium",
     "Doggsium",
+    "Birdsium"
 ]
 
 

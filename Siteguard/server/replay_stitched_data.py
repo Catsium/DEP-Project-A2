@@ -8,7 +8,7 @@ from pathlib import Path
 import httpx
 
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = "https://siteguardbackend.onrender.com"
 API_URL = BASE_URL + "/data"
 SESSION_ID = datetime.now().strftime(
     "%Y%m%d_%H%M%S_%f"
